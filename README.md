@@ -28,28 +28,28 @@ sub_dag = dag.subgraph([1, 2])
 ```
 
 ## Other Operations
+### All nodes & edges
+```python
+all_nodes = dag.nodes() # (1, 2, 3)
+all_edges = dag.edges() # ( (1, 2), (2, 3) )
+```
+
 ### Successors and Predecessors
 ```python
 successors = dag.successors(1) # [2]
 predecessors = dag.predecessors(2) # [1]
 ```
 
-### Indegree and Outdegree
-```python
-in_degree = dag.indegree(2) # 1
-out_degree = dag.outdegree(1) # 1
-```
-
-### Descendants
+### Descendants and Ancestors
 ```python
 descendants = dag.descendants(1) # [2, 3]
 ancestors = dag.ancestors(2) # [1]
 ```
 
-### All nodes & edges
+### Indegree and Outdegree
 ```python
-all_nodes = dag.nodes() # (1, 2, 3)
-all_edges = dag.edges() # ( (1, 2), (2, 3) )
+in_degree = dag.indegree(2) # 1
+out_degree = dag.outdegree(1) # 1
 ```
 
 ### Reverse
