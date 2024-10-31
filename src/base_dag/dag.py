@@ -108,16 +108,21 @@ class DAG:
 
     def nodes(self):
         """Return all of the nodes."""
-        return [n for n in self.dag_dict.keys()]
+        return tuple([n for n in self.dag_dict.keys()])
     
-    def edges(self):
-        """Return all of the edges."""
+    def edges(self, key: Callable = str):
+        """Return all of the edges as a tuple of tuples.
+        Can optionally provide a custom key to sort them by.
+        Hashing this edges list should give a unique hash for the graph."""
         edges = []
         for source in self.dag_dict:
             for target in self.dag_dict[source]:
                 edges.append((source, target,))
 
-        return edges
+        # Sort the edges
+        if key:
+            edges = sorted(edges, key=key)
+        return tuple(edges)
     
     def subgraph(self, nodes_in_subgraph: list):
         """Return a subgraph of the current DAG that contains the specified nodes, and all of the edges between them."""

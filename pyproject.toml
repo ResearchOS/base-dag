@@ -5,12 +5,20 @@ build-backend = 'hatchling.build'
 
 [project]
 name = "base-dag"
-version = '0.1.0'
+version = '0.1.2'
 description = 'A simple base implementation of a Directed Acyclic Graph, intended to be subclassed for more specific functionality.'
 authors = [{name = "Mitchell Tillman", email ="mtillman14@gmail.com"}]
+readme = "README.md"  # Path to your README file
+keywords = ["DAG", "graph", "directed acyclic graph", "data structures"]
 dependencies = [
 
 ]
+
+[project.urls]
+homepage = "https://github.com/ResearchOS/base-dag"        # Main homepage or project website
+repository = "https://github.com/ResearchOS/base-dag"
+documentation = "https://github.com/ResearchOS/base-dag"
+
 
 [tool.hatch.build]
 source = "src"
