@@ -1,4 +1,4 @@
-from typing import Hashable
+from typing import Hashable, Callable
 
 class DAG:
     """A simple implementation of a Directed Acyclic Graph."""
@@ -45,6 +45,10 @@ class DAG:
         
         self.dag_dict[source_node].append(target_node)
 
+        if not self.is_dag():
+            self.rm_edge(edge_to_add)
+            raise ValueError(f"Adding the edge from {source_node} to {target_node} failed, as it would result in a cycle!")
+
     def rm_edge(self, edge_to_remove: tuple):
         """Remove an edge."""
         if len(edge_to_remove) != 2:
@@ -63,10 +67,7 @@ class DAG:
     
     def predecessors(self, node: Hashable):
         predecessors = []
-        for n in self.dag_dict:
-            if node in self.dag_dict[n]:
-                predecessors.append(n)
-        return predecessors
+        return [predecessors.append(n) for n in self.dag_dict if node in self.dag_dict[n]]
     
     def indegree(self, node: Hashable):
         return len(self.predecessors(node))
@@ -75,7 +76,7 @@ class DAG:
         return len(self.successors(node))
     
     def descendants(self, node: Hashable):
-        """Get all downstream descendants of a node, recursively."""        
+        """Get all downstream descendants of a node, recursively, in no particular order."""        
         def recurse_descendants(self: DAG, node: Hashable, descendants: list = []):
             successors = self.successors(node)
             descendants.append(successors)
@@ -83,10 +84,10 @@ class DAG:
                 descendants.append(recurse_descendants(self, node, descendants))
             return descendants
 
-        return recurse_descendants(self, node)
+        return list(set(recurse_descendants(self, node)))
 
     def ancestors(self, node: Hashable):
-        """Get all upstream descendants of a node, recursively."""
+        """Get all upstream descendants of a node, recursively, in no particular order."""
         def recurse_ancestors(self: DAG, node: Hashable, ancestors: list = []):
             predecessors = self.predecessors(node)
             ancestors.append(predecessors)
@@ -94,7 +95,7 @@ class DAG:
                 predecessors.append(recurse_ancestors(self, node, ancestors))
             return predecessors
         
-        return recurse_ancestors(self, node)
+        return list(set(recurse_ancestors(self, node)))
     
     def nodes(self):
         """Return all of the nodes."""
@@ -137,6 +138,85 @@ class DAG:
 
         # Add all of the reversed edges
         for edge in edges:
-            reversed_edge = (edge[1], edge[0])
+            reversed_edge = (edge[1], edge[0],)
             self.add_edge(reversed_edge)
 
+    def is_acyclic(self):
+        """Return True if the DAG is acyclic, otherwise False."""
+        try:
+            # Attempt to perform a topological sort
+            self.topological_sort()
+            return True
+        except ValueError:
+            # If a ValueError is raised, a cycle was detected
+            return False
+    
+    def topological_sort(self) -> list:
+        """Return a topological sort of the DAG if it exists, else raise a ValueError for cyclic graphs."""
+        # Create a dictionary to track the indegree of each node
+        indegree_map = {node: self.indegree(node) for node in self.nodes()}
+        # Initialize a list to hold nodes with zero indegree
+        zero_indegree_nodes = [node for node, indegree in indegree_map.items() if indegree == 0]
+        sorted_nodes = []
+
+        while zero_indegree_nodes:
+            # Remove a node with zero indegree
+            current_node = zero_indegree_nodes.pop()
+            # Add it to the sorted list
+            sorted_nodes.append(current_node)
+
+            # For each successor of the current node, decrease its indegree by 1
+            for successor in self.successors(current_node):
+                indegree_map[successor] -= 1
+                # If indegree becomes zero, add the successor to the list of zero indegree nodes
+                if indegree_map[successor] == 0:
+                    zero_indegree_nodes.append(successor)
+
+        # Check if the sorting includes all nodes (to ensure there's no cycle)
+        if len(sorted_nodes) != len(self.nodes()):
+            raise ValueError("Graph contains a cycle, so topological sort is not possible")
+
+        return sorted_nodes
+
+    def topological_generations(self) -> list:
+        """Return the nodes in each topological generation as a list of lists."""
+        # Create a dictionary to track the indegree of each node
+        indegree_map = {node: self.indegree(node) for node in self.nodes()}
+        # Initialize a list to hold nodes with zero indegree (initial generation)
+        zero_indegree_nodes = [node for node, indegree in indegree_map.items() if indegree == 0]
+        generations = []
+
+        while zero_indegree_nodes:
+            # Current generation will be all nodes with zero indegree
+            current_generation = zero_indegree_nodes[:]
+            generations.append(current_generation)
+            next_generation = []
+
+            # Process each node in the current generation
+            for node in current_generation:
+                # Remove it from zero_indegree_nodes
+                zero_indegree_nodes.remove(node)
+                # For each successor, reduce its indegree by 1
+                for successor in self.successors(node):
+                    indegree_map[successor] -= 1
+                    # If indegree becomes zero, it belongs to the next generation
+                    if indegree_map[successor] == 0:
+                        next_generation.append(successor)
+
+            # Update zero_indegree_nodes with the nodes in the next generation
+            zero_indegree_nodes = next_generation
+
+        # Check if we covered all nodes (if not, the graph has a cycle)
+        if sum(len(gen) for gen in generations) != len(self.nodes()):
+            raise ValueError("Graph contains a cycle, so topological generations are not possible")
+
+        return generations
+    
+    def sorted_topological_generations(self, key: Callable = str) -> list:
+        """Return the nodes in each topological generation as a list of lists,
+        sorted within each generation based on the provided key."""
+        # Get the topological generations without sorting within each generation
+        generations = self.topological_generations()
+        # Sort each generation based on the key
+        sorted_generations = [sorted(generation, key=key) for generation in generations]
+        return sorted_generations
