@@ -4,13 +4,16 @@ class DAG:
     """A simple implementation of a Directed Acyclic Graph."""
 
     def __init__(self):
-        self.dag_dict = {}        
+        self.dag_dict = {}     
 
     def add_node(self, node_to_add: Hashable):
         if node_to_add in self.dag_dict.keys():
             return
         
         self.dag_dict[node_to_add] = []
+
+    def add_nodes_from(self, nodes_to_add: Hashable):
+        [self.add_node(node_to_add) for node_to_add in nodes_to_add]
 
     def remove_node(self, node_to_remove: Hashable):
         if node_to_remove not in self.dag_dict.keys():
@@ -48,6 +51,9 @@ class DAG:
         if not self.has_path(target_node, source_node):
             self.dag_dict[source_node].remove(target_node)
             raise ValueError(f"Adding the edge from {source_node} to {target_node} failed, as it would result in a cycle!")
+        
+    def add_edges_from(self, edges_to_add: list):
+        [self.add_edge(edge_to_add) for edge_to_add in edges_to_add]
 
     def remove_edge(self, edge_to_remove: tuple):
         """Remove an edge."""

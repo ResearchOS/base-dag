@@ -9,8 +9,7 @@ from base_dag import DAG
 dag = DAG()
 
 # Add nodes and edges
-dag.add_node(1)
-dag.add_node(2)
+dag.add_nodes_from([1, 2])
 dag.add_node(3)
 dag.add_edge((1, 2))
 dag.add_edge((2, 3))
