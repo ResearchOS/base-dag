@@ -12,13 +12,13 @@ class DAG:
         
         self.dag_dict[node_to_add] = []
 
-    def rm_node(self, node_to_remove: Hashable):
+    def remove_node(self, node_to_remove: Hashable):
         if node_to_remove not in self.dag_dict.keys():
             return
         
         del self.dag_dict[node_to_remove]
 
-        # Ensure no other nodes contain this node
+        # Remove all edges to this node.
         for node in self.dag_dict:
             if node_to_remove in self.dag_dict[node]:
                 self.dag_dict[node].pop(node_to_remove)

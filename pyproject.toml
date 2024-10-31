@@ -4,11 +4,13 @@ requires = ['hatchling']
 build-backend = 'hatchling.build'
 
 [project]
-name = "simple-dag"
+name = "base-dag"
 version = '0.1.0'
-description = 'A template for a Python project.'
+description = 'A simple base implementation of a Directed Acyclic Graph, intended to be subclassed for more specific functionality.'
 authors = [{name = "Mitchell Tillman", email ="mtillman14@gmail.com"}]
 dependencies = [
 
 ]
 
+[tool.hatch.build]
+source = "src"
