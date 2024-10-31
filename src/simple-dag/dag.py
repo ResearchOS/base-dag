@@ -45,11 +45,11 @@ class DAG:
         
         self.dag_dict[source_node].append(target_node)
 
-        if not self.is_dag():
-            self.rm_edge(edge_to_add)
+        if not self.has_path(target_node, source_node):
+            self.dag_dict[source_node].remove(target_node)
             raise ValueError(f"Adding the edge from {source_node} to {target_node} failed, as it would result in a cycle!")
 
-    def rm_edge(self, edge_to_remove: tuple):
+    def remove_edge(self, edge_to_remove: tuple):
         """Remove an edge."""
         if len(edge_to_remove) != 2:
             raise ValueError("Edge tuple must contain exactly two nodes.")
@@ -60,14 +60,13 @@ class DAG:
         source_node = edge_to_remove[0]
         target_node = edge_to_remove[1]
 
-        self.dag_dict[source_node].pop(target_node)
+        self.dag_dict[source_node].remove(target_node)
 
     def successors(self, node: Hashable):
         return self.dag_dict[node]
     
-    def predecessors(self, node: Hashable):
-        predecessors = []
-        return [predecessors.append(n) for n in self.dag_dict if node in self.dag_dict[n]]
+    def predecessors(self, node: Hashable):        
+        return [n for n in self.dag_dict if node in self.dag_dict[n]]
     
     def indegree(self, node: Hashable):
         return len(self.predecessors(node))
@@ -76,27 +75,31 @@ class DAG:
         return len(self.successors(node))
     
     def descendants(self, node: Hashable):
-        """Get all downstream descendants of a node, recursively, in no particular order."""        
-        def recurse_descendants(self: DAG, node: Hashable, descendants: list = []):
-            successors = self.successors(node)
-            descendants.append(successors)
-            for n in successors:
-                descendants.append(recurse_descendants(self, node, descendants))
-            return descendants
+        """Get all downstream descendants of a node in no particular order."""
+        descendants = set()
 
-        return list(set(recurse_descendants(self, node)))
+        def recurse_descendants(current_node):
+            for successor in self.successors(current_node):
+                if successor not in descendants:
+                    descendants.add(successor)
+                    recurse_descendants(successor)
+
+        recurse_descendants(node)
+        return list(descendants)
 
     def ancestors(self, node: Hashable):
-        """Get all upstream descendants of a node, recursively, in no particular order."""
-        def recurse_ancestors(self: DAG, node: Hashable, ancestors: list = []):
-            predecessors = self.predecessors(node)
-            ancestors.append(predecessors)
-            for n in predecessors:
-                predecessors.append(recurse_ancestors(self, node, ancestors))
-            return predecessors
-        
-        return list(set(recurse_ancestors(self, node)))
-    
+        """Get all upstream ancestors of a node in no particular order."""
+        ancestors = set()
+
+        def recurse_ancestors(current_node):
+            for predecessor in self.predecessors(current_node):
+                if predecessor not in ancestors:
+                    ancestors.add(predecessor)
+                    recurse_ancestors(predecessor)
+
+        recurse_ancestors(node)
+        return list(ancestors)
+
     def nodes(self):
         """Return all of the nodes."""
         return [n for n in self.dag_dict.keys()]
@@ -134,22 +137,46 @@ class DAG:
         edges = self.edges()
         # Remove all of the edges
         for edge in edges:
-            self.rm_edge(edge)
+            self.remove_edge(edge)
 
         # Add all of the reversed edges
         for edge in edges:
             reversed_edge = (edge[1], edge[0],)
             self.add_edge(reversed_edge)
 
-    def is_acyclic(self):
-        """Return True if the DAG is acyclic, otherwise False."""
-        try:
-            # Attempt to perform a topological sort
-            self.topological_sort()
+    def is_acyclic(self) -> bool:
+        """Return True if the graph is acyclic, otherwise False, using DFS to detect cycles."""
+        visited = set()
+        recursion_stack = set()
+
+        def dfs(node):
+            # If the node is already in the recursion stack, we have a cycle
+            if node in recursion_stack:
+                return False
+            # If the node has been visited and is not in the recursion stack, skip it
+            if node in visited:
+                return True
+
+            # Mark the node as visited and add to the recursion stack
+            visited.add(node)
+            recursion_stack.add(node)
+
+            # Recursively visit all successors
+            for successor in self.successors(node):
+                if not dfs(successor):
+                    return False
+
+            # Remove from recursion stack after all successors are visited
+            recursion_stack.remove(node)
             return True
-        except ValueError:
-            # If a ValueError is raised, a cycle was detected
-            return False
+
+        # Check each node to ensure all components are covered
+        for node in self.nodes():
+            if node not in visited:
+                if not dfs(node):
+                    return False
+
+        return True
     
     def topological_sort(self) -> list:
         """Return a topological sort of the DAG if it exists, else raise a ValueError for cyclic graphs."""
@@ -220,3 +247,18 @@ class DAG:
         # Sort each generation based on the key
         sorted_generations = [sorted(generation, key=key) for generation in generations]
         return sorted_generations
+
+    def has_path(self, start: Hashable, end: Hashable) -> bool:
+        """Check if there is a path from start node to end node using DFS."""
+        visited = set()
+
+        def dfs(node):
+            if node == end:
+                return True
+            visited.add(node)
+            for successor in self.successors(node):
+                if successor not in visited and dfs(successor):
+                    return True
+            return False
+
+        return dfs(start)
