@@ -292,3 +292,20 @@ class DAG:
         ancestors = self.ancestors(node, include_node=True)
         subgraph = self.subgraph(ancestors)
         return hash(subgraph.edges())
+    
+    def transitive_closure(self) -> "DAG":
+        """Return the transitive closure of the DAG as a new DAG instance."""
+        closure = DAG()
+        
+        # Add all nodes to the transitive closure
+        for node in self.nodes:
+            closure.add_node(node)
+        
+        # For each node, add edges to all reachable nodes
+        for node in self.nodes:
+            # Get all descendants of the current node
+            descendants = self.descendants(node)
+            for descendant in descendants:
+                closure.add_edge((node, descendant))
+        
+        return closure
