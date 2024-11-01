@@ -110,11 +110,16 @@ class DAG:
             ancestors.add(node)
         return list(ancestors)
 
+    @property
     def nodes(self):
         """Return all of the nodes."""
         return tuple([n for n in self.dag_dict.keys()])
     
-    def edges(self, key: Callable = lambda edge: edge):
+    @property
+    def edges(self):
+        return self._edges()
+
+    def _edges(self, key: Callable = lambda edge: edge):
         """Return all of the edges as a tuple of tuples.
         Can optionally provide a custom key to sort them by.
         Hashing this edges list should give a unique hash for the graph."""
@@ -280,7 +285,7 @@ class DAG:
     
     def hash(self, node: Hashable = None) -> int:
         """Return a unique hash for the graph based on the hash of its edges.
-        If a node is provided, return a unique hash for the subgraph of the node's descendants."""
+        If a node is provided, return a unique hash for the subgraph of the node's ancestors."""
         if node is None:
             return hash(self.edges())
         
