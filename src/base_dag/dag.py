@@ -80,7 +80,7 @@ class DAG:
     def outdegree(self, node: Hashable):
         return len(self.successors(node))
     
-    def descendants(self, node: Hashable):
+    def descendants(self, node: Hashable, include_node: bool = False):
         """Get all downstream descendants of a node in no particular order."""
         descendants = set()
 
@@ -91,9 +91,11 @@ class DAG:
                     recurse_descendants(successor)
 
         recurse_descendants(node)
+        if include_node:
+            descendants.add(node)
         return list(descendants)
 
-    def ancestors(self, node: Hashable):
+    def ancestors(self, node: Hashable, include_node: bool = False):
         """Get all upstream ancestors of a node in no particular order."""
         ancestors = set()
 
@@ -104,13 +106,15 @@ class DAG:
                     recurse_ancestors(predecessor)
 
         recurse_ancestors(node)
+        if include_node:
+            ancestors.add(node)
         return list(ancestors)
 
     def nodes(self):
         """Return all of the nodes."""
         return tuple([n for n in self.dag_dict.keys()])
     
-    def edges(self, key: Callable = str):
+    def edges(self, key: Callable = lambda edge: edge):
         """Return all of the edges as a tuple of tuples.
         Can optionally provide a custom key to sort them by.
         Hashing this edges list should give a unique hash for the graph."""
@@ -273,3 +277,13 @@ class DAG:
             return False
 
         return dfs(start)
+    
+    def hash(self, node: Hashable = None) -> int:
+        """Return a unique hash for the graph based on the hash of its edges.
+        If a node is provided, return a unique hash for the subgraph of the node's descendants."""
+        if node is None:
+            return hash(self.edges())
+        
+        ancestors = self.ancestors(node, include_node=True)
+        subgraph = self.subgraph(ancestors)
+        return hash(subgraph.edges())
