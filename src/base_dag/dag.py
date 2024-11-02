@@ -314,23 +314,23 @@ class DAG:
 
     from copy import copy
 
-def relabel_nodes(self, mapping: dict):
-    """Relabel the nodes using the given mapping of old to new nodes, preserving all edges."""
+    def relabel_nodes(self, mapping: dict):
+        """Relabel the nodes using the given mapping of old to new nodes, preserving all edges."""
 
-    # Step 1: Create a new dictionary for relabeled nodes and edges
-    new_dag_dict = {}
+        # Step 1: Create a new dictionary for relabeled nodes and edges
+        new_dag_dict = {}
 
-    # Step 2: Iterate over each source node and its successors
-    all_nodes = copy(self.nodes)
-    for source_node in all_nodes:
-        # Get the new label for the source node, if it exists in mapping
-        new_source_node = mapping.get(source_node, source_node)
+        # Step 2: Iterate over each source node and its successors
+        all_nodes = copy(self.nodes)
+        for source_node in all_nodes:
+            # Get the new label for the source node, if it exists in mapping
+            new_source_node = mapping.get(source_node, source_node)
 
-        # Replace each target node in the successors list if it exists in the mapping
-        target_nodes = [mapping.get(target_node, target_node) for target_node in self.dag_dict[source_node]]
+            # Replace each target node in the successors list if it exists in the mapping
+            target_nodes = [mapping.get(target_node, target_node) for target_node in self.dag_dict[source_node]]
 
-        # Add the relabeled node and its successors to the new DAG dictionary
-        new_dag_dict[new_source_node] = target_nodes
+            # Add the relabeled node and its successors to the new DAG dictionary
+            new_dag_dict[new_source_node] = target_nodes
 
-    # Step 3: Replace the original dag_dict with the updated dictionary
-    self.dag_dict = new_dag_dict
+        # Step 3: Replace the original dag_dict with the updated dictionary
+        self.dag_dict = new_dag_dict
