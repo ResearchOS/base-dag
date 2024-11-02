@@ -24,10 +24,11 @@ class DAG:
         # Remove all edges to this node.
         for node in self.dag_dict:
             if node_to_remove in self.dag_dict[node]:
-                self.dag_dict[node].pop(node_to_remove)
+                self.dag_dict[node].remove(node_to_remove)
 
-    def add_edge(self, edge_to_add: tuple):
+    def add_edge(self, source_node: Hashable, target_node: Hashable):
         """Add an edge. Note that it cannot contain any edge information, unlike in NetworkX."""
+        edge_to_add = (source_node, target_node)
         if len(edge_to_add) != 2:
             raise ValueError("Edge tuple must contain exactly two nodes.")
         
@@ -48,15 +49,16 @@ class DAG:
         
         self.dag_dict[source_node].append(target_node)
 
-        if not self.has_path(target_node, source_node):
+        if self.has_path(target_node, source_node):
             self.dag_dict[source_node].remove(target_node)
             raise ValueError(f"Adding the edge from {source_node} to {target_node} failed, as it would result in a cycle!")
         
     def add_edges_from(self, edges_to_add: list):
-        [self.add_edge(edge_to_add) for edge_to_add in edges_to_add]
+        [self.add_edge(edge_to_add[0], edge_to_add[1]) for edge_to_add in edges_to_add]
 
-    def remove_edge(self, edge_to_remove: tuple):
+    def remove_edge(self, source_node: Hashable, target_node: Hashable):
         """Remove an edge."""
+        edge_to_remove = (source_node, target_node)
         if len(edge_to_remove) != 2:
             raise ValueError("Edge tuple must contain exactly two nodes.")
         
@@ -140,9 +142,8 @@ class DAG:
         for node in nodes_in_subgraph:
             subgraph.add_node(node)
 
-        # Add the edges
-        all_edges = self.edges()
-        for edge in all_edges:
+        # Add the edges        
+        for edge in self.edges:
             source = edge[0]
             target = edge[1]
             if source not in nodes_in_subgraph or target not in nodes_in_subgraph:
@@ -201,7 +202,7 @@ class DAG:
     def topological_sort(self) -> list:
         """Return a topological sort of the DAG if it exists, else raise a ValueError for cyclic graphs."""
         # Create a dictionary to track the indegree of each node
-        indegree_map = {node: self.indegree(node) for node in self.nodes()}
+        indegree_map = {node: self.indegree(node) for node in self.nodes}
         # Initialize a list to hold nodes with zero indegree
         zero_indegree_nodes = [node for node, indegree in indegree_map.items() if indegree == 0]
         sorted_nodes = []
@@ -220,7 +221,7 @@ class DAG:
                     zero_indegree_nodes.append(successor)
 
         # Check if the sorting includes all nodes (to ensure there's no cycle)
-        if len(sorted_nodes) != len(self.nodes()):
+        if len(sorted_nodes) != len(self.nodes):
             raise ValueError("Graph contains a cycle, so topological sort is not possible")
 
         return sorted_nodes
@@ -228,7 +229,7 @@ class DAG:
     def topological_generations(self) -> list:
         """Return the nodes in each topological generation as a list of lists."""
         # Create a dictionary to track the indegree of each node
-        indegree_map = {node: self.indegree(node) for node in self.nodes()}
+        indegree_map = {node: self.indegree(node) for node in self.nodes}
         # Initialize a list to hold nodes with zero indegree (initial generation)
         zero_indegree_nodes = [node for node, indegree in indegree_map.items() if indegree == 0]
         generations = []
@@ -254,7 +255,7 @@ class DAG:
             zero_indegree_nodes = next_generation
 
         # Check if we covered all nodes (if not, the graph has a cycle)
-        if sum(len(gen) for gen in generations) != len(self.nodes()):
+        if sum(len(gen) for gen in generations) != len(self.nodes):
             raise ValueError("Graph contains a cycle, so topological generations are not possible")
 
         return generations
