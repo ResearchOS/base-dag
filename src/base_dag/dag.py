@@ -319,7 +319,7 @@ class DAG:
         new_dag_dict = {}
 
         # Step 2: Iterate over each source node and its successors
-        all_nodes = copy(self.nodes)
+        all_nodes = copy.copy(self.nodes)
         for source_node in all_nodes:
             # Get the new label for the source node, if it exists in mapping
             new_source_node = mapping.get(source_node, source_node)

@@ -75,6 +75,18 @@ def test_topological_sort():
     sorted_nodes = dag.topological_sort()
     assert sorted([1, 2, 3, 4]) == sorted(sorted_nodes)
 
+def test_relabel_nodes():
+    dag = create_dag()
+    mapping = {
+        1: "1",
+        2: "2",
+        3: "3",
+        4: "4"
+    }
+    dag.relabel_nodes(mapping)
+    nodes = dag.nodes
+    assert set(nodes) == set([v for v in mapping.values()])
+
 if __name__ == '__main__':
     pytest.main([__file__])
 
