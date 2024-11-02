@@ -5,7 +5,7 @@ build-backend = 'hatchling.build'
 
 [project]
 name = "base-dag"
-version = '0.1.3'
+version = '0.1.5'
 description = 'A simple base implementation of a Directed Acyclic Graph, intended to be subclassed for more specific functionality.'
 authors = [{name = "Mitchell Tillman", email ="mtillman14@gmail.com"}]
 readme = "README.md"  # Path to your README file
