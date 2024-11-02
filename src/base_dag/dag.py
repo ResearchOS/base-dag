@@ -310,9 +310,7 @@ class DAG:
             for descendant in descendants:
                 closure.add_edge((node, descendant))
         
-        return closure
-
-    from copy import copy
+        return closure    
 
     def relabel_nodes(self, mapping: dict):
         """Relabel the nodes using the given mapping of old to new nodes, preserving all edges."""
