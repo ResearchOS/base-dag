@@ -77,10 +77,10 @@ class DAG:
     def predecessors(self, node: Hashable):        
         return [n for n in self.dag_dict if node in self.dag_dict[n]]
     
-    def indegree(self, node: Hashable):
+    def in_degree(self, node: Hashable):
         return len(self.predecessors(node))
     
-    def outdegree(self, node: Hashable):
+    def out_degree(self, node: Hashable):
         return len(self.successors(node))
     
     def descendants(self, node: Hashable, include_node: bool = False):
