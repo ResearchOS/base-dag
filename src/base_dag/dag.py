@@ -122,18 +122,15 @@ class DAG:
     def edges(self):
         return self._edges()
 
-    def _edges(self, key: Callable = lambda edge: edge):
+    def _edges(self, key: Callable = str):
         """Return all of the edges as a tuple of tuples.
-        Can optionally provide a custom key to sort them by.
-        Hashing this edges list should give a unique hash for the graph."""
-        edges = []
-        for source in self.dag_dict:
-            for target in self.dag_dict[source]:
-                edges.append((source, target,))
+        Sorts based on a custom key or by str() if no key is provided.
+        """
+        edges = [(source, target) for source in self.dag_dict for target in self.dag_dict[source]]
 
-        # Sort the edges
-        if key:
-            edges = sorted(edges, key=key)
+        # Use the provided key for sorting
+        edges = sorted(edges, key=key)
+            
         return tuple(edges)
     
     def subgraph(self, nodes_in_subgraph: list):
@@ -313,22 +310,44 @@ class DAG:
         return closure    
 
     def relabel_nodes(self, mapping: dict):
-        """Relabel the nodes using the given mapping of old to new nodes, preserving all edges."""
+        # Check for overlapping labels
+        old_labels = set(mapping.keys())
+        new_labels = set(mapping.values())
+        overlap = old_labels & new_labels
+        if overlap:
+            # Build a directed graph to resolve the order of relabeling
+            D = DAG()
+            for old, new in mapping.items():
+                if old != new:
+                    D.add_edge(old, new)
+            # Remove self-loops
+            for node in D.nodes:
+                if D.has_edge(node, node):
+                    D.remove_edge(node, node)
+            try:
+                order = reversed(D.topological_sort())
+            except ValueError as err:
+                raise ValueError(
+                    "The node label sets are overlapping and no ordering can "
+                    "resolve the mapping. Use copy=True."
+                ) from err
+        else:
+            # Non-overlapping labels
+            order = [n for n in self.nodes if n in mapping]
 
-        # Step 1: Create a new dictionary for relabeled nodes and edges
-        new_dag_dict = {}
+        for old_label in order:
+            new_label = mapping[old_label]
+            if new_label == old_label:
+                continue
 
-        # Step 2: Iterate over each source node and its successors
-        all_nodes = copy.copy(self.nodes)
-        for source_node in all_nodes:
-            # Get the new label for the source node, if it exists in mapping
-            new_source_node = mapping.get(source_node, source_node)
+            # Update the dag_dict keys
+            self.dag_dict[new_label] = self.dag_dict.pop(old_label)
 
-            # Replace each target node in the successors list if it exists in the mapping
-            target_nodes = [mapping.get(target_node, target_node) for target_node in self.dag_dict[source_node]]
+            # Replace old_label with new_label in successors
+            for source in self.dag_dict:
+                self.dag_dict[source] = [
+                    mapping.get(target, target) if target == old_label else target
+                    for target in self.dag_dict[source]
+                ]
 
-            # Add the relabeled node and its successors to the new DAG dictionary
-            new_dag_dict[new_source_node] = target_nodes
-
-        # Step 3: Replace the original dag_dict with the updated dictionary
-        self.dag_dict = new_dag_dict
+        return self

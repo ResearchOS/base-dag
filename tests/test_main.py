@@ -83,9 +83,8 @@ def test_relabel_nodes():
         3: "3",
         4: "4"
     }
-    dag.relabel_nodes(mapping)
-    nodes = dag.nodes
-    assert set(nodes) == set([v for v in mapping.values()])
+    dag.relabel_nodes(mapping)    
+    assert set(dag.nodes) == set([v for v in mapping.values()])
 
 if __name__ == '__main__':
     pytest.main([__file__])
