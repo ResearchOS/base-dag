@@ -1,5 +1,5 @@
 from typing import Hashable, Callable
-import copy
+import os
 
 class DAG:
     """A simple implementation of a Directed Acyclic Graph."""
@@ -351,3 +351,42 @@ class DAG:
                 ]
 
         return self
+
+    def to_md_files(self, folder_path: str, callables_dict: dict) -> None:
+        """Write the DAG to a set of markdown files in the specified folder, with YAML front matter.
+        Intended to be compatible with the Cosma visualization tool: https://cosma.arthurperret.fr/user-manual.html#creating-content-text-files-markdown
+        The possible fields in the front matter are:
+        - title: The title of the node (required)
+        - id: The unique identifier for the node (optional)
+        - type/types: The type of the node (optional)
+        - tags: The tags associated with the node (optional)
+        - thumbnail: The path to the thumbnail image (optional)
+        - begin: Timestamp for the beginning of the node (optional)
+        - end: Timestamp for the end of the node (optional)
+        Custom fields can be used if they are added to the record_metas field in the config.yml file."""
+        # Create the folder if it doesn't exist
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        # Write a markdown file for each node
+        for node in self.nodes:
+            try:
+                title = callables_dict['title'](node)
+                id = callables_dict['id'](node)
+            except:
+                raise Exception(f"Error: callable failed for node {node}")
+            file_name = f"{title}_{id}.md"
+            # Create the file path
+            file_path = os.path.join(folder_path, file_name)
+            # Get the node's successors
+            successors = self.successors(node)
+            # Write the file
+            with open(file_path, "w") as f:
+                f.write("---\n")
+                f.write(f"title: {title}\n")
+                f.write(f"id: {id}\n")
+                f.write("---\n")
+                for successor in successors:
+                    successor_title = callables_dict['title'](successor)
+                    successor_id = callables_dict['id'](successor)
+                    f.write(f"[[{successor_id}|{successor_title}]]\n")
