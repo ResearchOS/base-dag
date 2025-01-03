@@ -56,9 +56,9 @@ def test_successors():
 
 def test_indegree_outdegree():
     dag = create_dag()
-    indeg = dag.indegree(1)
+    indeg = dag.in_degree(1)
     assert indeg == 0
-    outdeg = dag.outdegree(1)
+    outdeg = dag.out_degree(1)
     assert outdeg == 1
 
 
