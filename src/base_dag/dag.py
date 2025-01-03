@@ -3,29 +3,39 @@ from __future__ import annotations
 
 from collections.abc import Callable, Hashable, Iterable
 from pathlib import Path
+from typing import Generic, Protocol, TypeVar
 
 
-class Node(Hashable, Iterable):
-    """Graph node."""
+class ComparableHashable(Hashable, Protocol):
+    """Object supporting rich comparisons and hashing."""
+
+    def __lt__(self, other: ComparableHashable) -> bool:
+        """Less-than comparison protocol."""
+
+Node = TypeVar("Node", bound=ComparableHashable)
 
 
-class DAG:
+class DAG(Generic[Node]):
     """A simple implementation of a Directed Acyclic Graph."""
 
     def __init__(self) -> None:
+        """Create new DAG."""
         self.dag_dict: dict[Node, list[Node]] = {}
 
     def add_node(self, node_to_add: Node) -> None:
+        """Add new node."""
         if node_to_add in self.dag_dict:
             return
 
         self.dag_dict[node_to_add] = []
 
-    def add_nodes_from(self, nodes_to_add: Node) -> None:
+    def add_nodes_from(self, nodes_to_add: Iterable[Node]) -> None:
+        """Add nodes from iterable."""
         for node in nodes_to_add:
             self.add_node(node)
 
     def remove_node(self, node_to_remove: Node) -> None:
+        """Remove node and its edges if they exist."""
         if node_to_remove not in self.dag_dict:
             return
 
@@ -58,7 +68,8 @@ class DAG:
             msg = f"Adding the edge from {source_node} to {target_node} failed, as it would result in a cycle!"
             raise ValueError(msg)
 
-    def add_edges_from(self, edges_to_add: list[Node]) -> None:
+    def add_edges_from(self, edges_to_add: Iterable[tuple[Node, Node]]) -> None:
+        """Add edges from iterable."""
         for source_node, target_node in edges_to_add:
             self.add_edge(source_node, target_node)
 
@@ -75,15 +86,19 @@ class DAG:
         self.dag_dict[source_node].remove(target_node)
 
     def successors(self, node: Node) -> list[Node]:
+        """Get successors of a node."""
         return self.dag_dict[node]
 
     def predecessors(self, node: Node) -> list[Node]:
+        """Get predecessors of a node."""
         return [n for n in self.dag_dict if node in self.dag_dict[n]]
 
     def in_degree(self, node: Node) -> int:
+        """Get number of node predecessors."""
         return len(self.predecessors(node))
 
     def out_degree(self, node: Node) -> int:
+        """Get number of node successors."""
         return len(self.successors(node))
 
     def descendants(self, node: Node, *, include_node: bool = False) -> list[Node]:
@@ -123,6 +138,7 @@ class DAG:
 
     @property
     def edges(self) -> tuple[tuple[Node, Node], ...]:
+        """Get all edges."""
         return self._edges()
 
     def _edges(self, key: Callable = str) -> tuple[tuple[Node, Node], ...]:
@@ -143,7 +159,7 @@ class DAG:
 
     def subgraph(self, nodes_in_subgraph: list[Node]) -> DAG:
         """Return a subgraph of the current DAG that contains the specified nodes, and all of the edges between them."""
-        subgraph = DAG()
+        subgraph: DAG = DAG()
         # Add the nodes
         for node in nodes_in_subgraph:
             subgraph.add_node(node)
@@ -299,7 +315,7 @@ class DAG:
 
     def transitive_closure(self) -> DAG:
         """Return the transitive closure of the DAG as a new DAG instance."""
-        closure = DAG()
+        closure: DAG = DAG()
 
         # Add all nodes to the transitive closure
         for node in self.nodes:
@@ -315,13 +331,14 @@ class DAG:
         return closure
 
     def relabel_nodes(self, mapping: dict) -> DAG:
+        """Relabel nodes."""
         # Check for overlapping labels
         old_labels = set(mapping.keys())
         new_labels = set(mapping.values())
         overlap = old_labels & new_labels
         if overlap:
             # Build a directed graph to resolve the order of relabeling
-            d = DAG()
+            d: DAG = DAG()
             for old, new in mapping.items():
                 if old != new:
                     d.add_edge(old, new)
@@ -384,7 +401,7 @@ class DAG:
                 id_ = callables_dict["id"](node)
             except Exception as err:  # This should probably be refactored to target specific exceptions
                 msg = f"Error: callable failed for node {node}"
-                raise Exception(msg) from err
+                raise Exception(msg) from err  # noqa: TRY002
 
             file_name = f"{title}_{id_}.md"
 
