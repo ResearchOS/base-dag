@@ -19,11 +19,21 @@ homepage = "https://github.com/ResearchOS/base-dag"        # Main homepage or pr
 repository = "https://github.com/ResearchOS/base-dag"
 documentation = "https://github.com/ResearchOS/base-dag"
 
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-awesome-pages-plugin>=2.10.1",
+    "mkdocs-git-revision-date-localized-plugin>=1.3.0",
+    "mkdocs-material>=9.5.49",
+    "mkdocstrings>=0.27.0",
+    "pytest>=8.3.4",
+    "toml>=0.10.2",  # NOTE: This isn't really maintained, I'd suggest using an alternative, such as the built-in tomllib (>=3.11) or tomli
+]
 
 [tool.hatch.build]
 source = "src"
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "src"
+    "src"
 ]

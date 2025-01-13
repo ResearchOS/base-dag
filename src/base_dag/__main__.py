@@ -1,5 +1,8 @@
-def main():
-    pass
+"""Run package as program."""
 
-if __name__ == '__main__':
+def main() -> None:
+    """Execute main program."""
+
+
+if __name__ == "__main__":
     pass
