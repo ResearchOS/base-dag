@@ -1,4 +1,5 @@
 """Directed Acrylic Graph implementation."""
+import os
 from __future__ import annotations
 
 from collections.abc import Callable, Hashable, Iterable
@@ -375,7 +376,7 @@ class DAG(Generic[Node]):
 
         return self
 
-    def to_md_files(self, folder_path: str | Path, callables_dict: dict) -> None:
+    def to_md_files(self, folder_path: str, callables_dicts: list) -> None:
         """Write the DAG to a set of markdown files in the specified folder, with YAML front matter.
 
         Intended to be compatible with the Cosma visualization tool: https://cosma.arthurperret.fr/user-manual.html#creating-content-text-files-markdown
@@ -391,20 +392,117 @@ class DAG(Generic[Node]):
         """
         folder_path = Path(folder_path)
         # Create the folder if it doesn't exist
-        if not folder_path.exists():
-            folder_path.mkdir(parents=True)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)    
 
+        keys_list = callables_dicts[0].keys()
+        
+        for callables_dict in callables_dicts:
+            if "title" not in callables_dict.keys():
+                raise Exception("Error: 'title' must be included in the callables_dict")
+            
+
+        # 1. Write a markdown file for each node. At first, do not include the links to the cited works.
+        for node in self.nodes:
+            id = node
+            valid_callables_dict = {k: False for k in keys_list}
+            resolved_metadata_dict = {}
+            # Resolve the metadata for the node. Uses the list of callables_dict to customize the metadata resolution, allowing for multiple sets of rules.            
+            for key in keys_list:                
+                for callables_dict in callables_dicts:
+                    try:
+                        resolved_metadata_dict[key] = callables_dict[key](node)
+                        valid_callables_dict[key] = True
+                        break
+                    except:
+                        pass
+                if not valid_callables_dict[key]:
+                    raise Exception(f"Error: callable dict failed for key {key}, node {node}")
+                if key == 'authors':
+                    parts = resolved_metadata_dict[key].split(",")
+                    all_authors = [','.join(parts[i:i+2]).strip() for i in range(0, len(parts), 2)]
+                    first_three_authors = ' - '.join(all_authors[:3])
+                elif key == 'year':
+                    year = resolved_metadata_dict[key]
+                elif key == 'type':
+                    type = resolved_metadata_dict[key]
+            file_name = f"{first_three_authors}_{year}_{type}.md"        
+            file_name = file_name.replace("/", "-")    
+            file_path = os.path.join(folder_path, file_name) # Create the file path
+            # Write the node to the file
+            if not os.path.exists(file_path):
+                with open(file_path, "w") as f:
+                    f.write("---\n")
+                    f.write(f"id: {id}\n")
+                    for key in keys_list:
+                        f.write(f"{key}: {resolved_metadata_dict[key]}\n")         
+                    f.write("---\n\n")
+
+        # 2. For each markdown file, add the links to the cited works.
+        for md_file in os.listdir(folder_path):
+            if not md_file.endswith(".md"):
+                continue
+            md_file_path = os.path.join(folder_path, md_file)
+            with open(md_file_path, "r") as f:
+                lines = f.readlines()
+            with open(md_file_path, "w") as f:
+                # Re-write the front matter.
+                for line in lines:
+                    if line.startswith('id: '):
+                        id = line.split(": ")[1].strip()
+                    f.write(line)
+                node = id
+                successors = self.successors(node)
+                for successor in successors:
+                    successor_metadata_dict = {}
+                    valid_successor_callables_dict = {k: False for k in keys_list}
+                    successor_id = successor
+                    for key in keys_list:                
+                        for callables_dict in callables_dicts:
+                            try:
+                                successor_metadata_dict[key] = callables_dict[key](successor)
+                                valid_successor_callables_dict[key] = True
+                                break
+                            except:
+                                pass
+                    successor_title = successor_metadata_dict["title"]
+                    f.write(f"[[{successor_id}|{successor_title}]]\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
         # Write a markdown file for each node
         for node in self.nodes:
-            try:
-                title = callables_dict["title"](node)
-                id_ = callables_dict["id"](node)
-            except Exception as err:  # This should probably be refactored to target specific exceptions
-                msg = f"Error: callable failed for node {node}"
-                raise Exception(msg) from err  # noqa: TRY002
-
-            file_name = f"{title}_{id_}.md"
-
+            id = node            
+            valid_callables_dict = {k: False for k in keys_list}
+            resolved_metadata_dict = {}
+            # Resolve the metadata for the node. Uses the list of callables_dict to customize the metadata resolution, allowing for multiple sets of rules.
+            file_name = ""
+            for key in keys_list:                
+                for callables_dict in callables_dicts:
+                    try:
+                        resolved_metadata_dict[key] = callables_dict[key](node)
+                        valid_callables_dict[key] = True
+                        break
+                    except:
+                        pass
+                if not valid_callables_dict[key]:
+                    raise Exception(f"Error: callable dict failed for key {key}, node {node}")
+                if not file_name:
+                    file_name += str(resolved_metadata_dict[key])
+                else:
+                    file_name += '_' + str(resolved_metadata_dict[key])
+            file_name += ".md"
             # Create the file path
             file_path = folder_path / file_name
 
@@ -412,14 +510,38 @@ class DAG(Generic[Node]):
             successors = self.successors(node)
 
             # Write the file
-            contents = (
-                "---\n"
-                f"title: {title}\n"
-                f"id: {id_}\n"
-                "---\n"
-                "".join(
-                    f"[[{callables_dict["id"](successor)}|{callables_dict["title"](successor)}]]\n"
-                    for successor in successors
-                )
-            )
-            file_path.write_text(contents, encoding="utf-8")
+            if not os.path.exists(file_path):
+                with open(file_path, "w") as f:
+                    f.write("---\n")
+                    f.write(f"id: {id}\n")
+                    for key in keys_list:
+                        f.write(f"{key}: {resolved_metadata_dict[key]}\n")         
+                    f.write("---\n\n")
+                    for successor in successors:
+                        successor_file_name = ''
+                        successor_metadata_dict = {}
+                        valid_successor_callables_dict = {k: False for k in keys_list}
+                        successor_id = successor
+                        for key in keys_list:                
+                            for callables_dict in callables_dicts:
+                                try:
+                                    successor_metadata_dict[key] = callables_dict[key](successor)
+                                    valid_successor_callables_dict[key] = True
+                                    break
+                                except:
+                                    pass
+                            if not successor_file_name:
+                                successor_file_name += str(successor_metadata_dict[key])
+                            else:
+                                successor_file_name += '_' + str(successor_metadata_dict[key])
+                        successor_file_name += ".md"
+                        successor_title = successor_metadata_dict["title"]
+                        f.write(f"[[{successor_id}|{successor_title}]]\n")
+                        successor_file_path = os.path.join(folder_path, successor_file_name)
+                        if not os.path.exists(successor_file_path):
+                            with open(successor_file_path, 'w') as sf:
+                                sf.write("---\n")
+                                sf.write(f"id: {successor_id}\n")
+                                for key in keys_list:
+                                    sf.write(f"{key}: {successor_metadata_dict[key]}\n")         
+                                sf.write("---\n\n")
